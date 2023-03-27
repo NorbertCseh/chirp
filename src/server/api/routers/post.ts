@@ -1,6 +1,11 @@
 import clerkClient, { type User } from "@clerk/clerk-sdk-node";
 import { TRPCError } from "@trpc/server";
-import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
+import { z } from "zod";
+import {
+  createTRPCRouter,
+  privateProcedure,
+  publicProcedure,
+} from "~/server/api/trpc";
 
 const filterUserForClient = (user: User) => {
   return {
@@ -37,4 +42,18 @@ export const postRouter = createTRPCRouter({
       };
     });
   }),
+
+  create: privateProcedure
+    .input(z.object({ content: z.string().emoji().min(1).max(280) }))
+    .mutation(async ({ ctx, input }) => {
+      const authorId = ctx.userId;
+
+      const post = await ctx.prisma.post.create({
+        data: {
+          authorId,
+          content: input.content,
+        },
+      });
+      return post;
+    }),
 });
